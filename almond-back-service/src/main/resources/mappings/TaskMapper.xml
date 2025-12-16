@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ravey.almond.service.dao.mapper.TaskMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.ravey.almond.service.dao.entity.Task">
+        <id column="id" property="id" />
+        <result column="parent_id" property="parentId" />
+        <result column="user_id" property="userId" />
+        <result column="title" property="title" />
+        <result column="description" property="description" />
+        <result column="level" property="level" />
+        <result column="start_date" property="startDate" />
+        <result column="end_date" property="endDate" />
+        <result column="actual_start" property="actualStart" />
+        <result column="actual_end" property="actualEnd" />
+        <result column="status" property="status" />
+        <result column="priority" property="priority" />
+        <result column="order_index" property="orderIndex" />
+        <result column="creator" property="creator" />
+        <result column="creator_id" property="creatorId" />
+        <result column="create_time" property="createTime" />
+        <result column="updater" property="updater" />
+        <result column="updater_id" property="updaterId" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, parent_id, user_id, title, description, level, start_date, end_date, actual_start, actual_end, status, priority, order_index, creator, creator_id, create_time, updater, updater_id, update_time
+    </sql>
+
+    <select id="selectDetailById" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM task
+        WHERE id = #{id}
+    </select>
+
+</mapper>
