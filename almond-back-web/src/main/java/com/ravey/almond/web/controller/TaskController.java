@@ -1,9 +1,9 @@
 package com.ravey.almond.web.controller;
 
-import com.ravey.almond.api.dto.CreateTaskReq;
-import com.ravey.almond.api.dto.PageResult;
-import com.ravey.almond.api.dto.TaskDTO;
-import com.ravey.almond.api.dto.TaskListReq;
+import com.ravey.almond.api.dto.req.CreateTaskReq;
+import com.ravey.almond.api.dto.resp.PageResult;
+import com.ravey.almond.api.dto.dto.TaskDTO;
+import com.ravey.almond.api.dto.req.TaskListReq;
 import com.ravey.almond.service.TaskService;
 import com.ravey.common.service.web.result.HttpResult;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +48,24 @@ public class TaskController {
     @GetMapping("/list")
     public HttpResult<PageResult<TaskDTO>> list(@ModelAttribute TaskListReq req) {
         PageResult<TaskDTO> result = taskService.listTasks(req);
+        return HttpResult.success(result);
+    }
+
+    /**
+     * 拆解任务
+     */
+    @PostMapping("/{id}/decompose")
+    public HttpResult<String> decompose(@PathVariable Long id) {
+        String result = taskService.decomposeTask(id);
+        return HttpResult.success(result);
+    }
+
+    /**
+     * 生成记忆辅助
+     */
+    @PostMapping("/{id}/generate-memory-aids")
+    public HttpResult<String> generateMemoryAids(@PathVariable Long id) {
+        String result = taskService.generateMemoryAids(id);
         return HttpResult.success(result);
     }
 }

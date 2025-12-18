@@ -7,7 +7,7 @@
         <id column="id" property="id" />
         <result column="user_id" property="userId" />
         <result column="title" property="title" />
-        <result column="content" property="content" />
+        <result column="description" property="content" />
         <result column="category" property="category" />
         <result column="tags" property="tags" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler" />
         <result column="item_type" property="itemType" />
@@ -17,6 +17,7 @@
         <result column="review_date" property="reviewDate" />
         <result column="next_review_date" property="nextReviewDate" />
         <result column="starred" property="starred" />
+        <result column="task_type" property="taskType" />
         <result column="creator" property="creator" />
         <result column="creator_id" property="creatorId" />
         <result column="create_time" property="createTime" />
@@ -27,14 +28,31 @@
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        id, user_id, title, content, category, tags, item_type, difficulty, mastery, review_count, review_date, next_review_date, starred, creator, creator_id, create_time, updater, updater_id, update_time
+        id, user_id, title, description, category, tags, task_type, item_type, difficulty, mastery, review_count, review_date, next_review_date, starred, creator, creator_id, create_time, updater, updater_id, update_time
     </sql>
 
     <select id="selectDetailById" resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
-        FROM memory_items
-        WHERE id = #{id}
+        FROM task
+        WHERE id = #{id} AND task_type = 'memory'
+    </select>
+
+    <select id="selectPageList" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM task
+        <where>
+            task_type = 'memory'
+            AND user_id = #{userId}
+            <if test="req.keyword != null and req.keyword != ''">
+                AND (title LIKE CONCAT('%', #{req.keyword}, '%') OR description LIKE CONCAT('%', #{req.keyword}, '%'))
+            </if>
+            <if test="req.category != null and req.category != ''">
+                AND category = #{req.category}
+            </if>
+        </where>
+        ORDER BY create_time DESC
     </select>
 
 </mapper>

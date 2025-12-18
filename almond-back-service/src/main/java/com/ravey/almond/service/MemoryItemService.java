@@ -1,10 +1,10 @@
 package com.ravey.almond.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.ravey.almond.api.dto.CreateMemoryItemReq;
-import com.ravey.almond.api.dto.MemoryItemDTO;
-import com.ravey.almond.api.dto.MemoryItemListReq;
-import com.ravey.almond.api.dto.PageResult;
+import com.ravey.almond.api.dto.req.CreateMemoryItemReq;
+import com.ravey.almond.api.dto.dto.MemoryItemDTO;
+import com.ravey.almond.api.dto.req.MemoryItemListReq;
+import com.ravey.almond.api.dto.resp.PageResult;
 import com.ravey.almond.service.dao.entity.MemoryItem;
 
 /**
@@ -38,4 +38,12 @@ public interface MemoryItemService extends IService<MemoryItem> {
      * @return 分页结果
      */
     PageResult<MemoryItemDTO> listMemoryItems(MemoryItemListReq req);
+
+    /**
+     * 更新记忆项
+     *
+     * @param dto 记忆项DTO
+     * @return 是否成功
+     */
+    boolean updateMemoryItem(MemoryItemDTO dto);
 }

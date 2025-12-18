@@ -1,4 +1,4 @@
-package com.ravey.almond.api.dto;
+package com.ravey.almond.api.dto.req;
 
 import lombok.Data;
 
@@ -23,6 +23,11 @@ public class TaskListReq implements Serializable {
      * 状态
      */
     private String status;
+
+    /**
+     * 任务类型(task/memory/goal)
+     */
+    private String taskType;
 
     /**
      * 页码

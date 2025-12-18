@@ -15,6 +15,14 @@
         <result column="actual_start" property="actualStart" />
         <result column="actual_end" property="actualEnd" />
         <result column="status" property="status" />
+        <result column="task_type" property="taskType" />
+        <result column="tags" property="tags" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler" />
+        <result column="difficulty" property="difficulty" />
+        <result column="mastery" property="mastery" />
+        <result column="review_count" property="reviewCount" />
+        <result column="review_date" property="reviewDate" />
+        <result column="next_review_date" property="nextReviewDate" />
+        <result column="starred" property="starred" />
         <result column="priority" property="priority" />
         <result column="order_index" property="orderIndex" />
         <result column="creator" property="creator" />
@@ -27,7 +35,7 @@
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        id, parent_id, user_id, title, description, level, start_date, end_date, actual_start, actual_end, status, priority, order_index, creator, creator_id, create_time, updater, updater_id, update_time
+        id, parent_id, user_id, title, description, level, tags, task_type, difficulty, mastery, review_count, review_date, next_review_date, starred, start_date, end_date, actual_start, actual_end, status, priority, order_index, creator, creator_id, create_time, updater, updater_id, update_time
     </sql>
 
     <select id="selectDetailById" resultMap="BaseResultMap">
@@ -35,6 +43,25 @@
         <include refid="Base_Column_List"/>
         FROM task
         WHERE id = #{id}
+    </select>
+
+    <select id="selectPageList" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM task
+        <where>
+            user_id = #{userId}
+            <if test="req.status != null and req.status != ''">
+                AND status = #{req.status}
+            </if>
+            <if test="req.taskType != null and req.taskType != ''">
+                AND task_type = #{req.taskType}
+            </if>
+            <if test="req.keyword != null and req.keyword != ''">
+                AND (title LIKE CONCAT('%', #{req.keyword}, '%') OR description LIKE CONCAT('%', #{req.keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY create_time DESC
     </select>
 
 </mapper>

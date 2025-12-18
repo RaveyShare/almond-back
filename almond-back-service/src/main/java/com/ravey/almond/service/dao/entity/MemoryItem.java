@@ -18,8 +18,14 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName(value = "memory_items", autoResultMap = true)
+@TableName(value = "task", autoResultMap = true)
 public class MemoryItem extends BaseEntity {
+
+    /**
+     * 任务类型(必须为 memory)
+     */
+    @TableField("task_type")
+    private String taskType = "memory";
 
     /**
      * 所属用户ID
@@ -36,7 +42,7 @@ public class MemoryItem extends BaseEntity {
     /**
      * 内容正文
      */
-    @TableField("content")
+    @TableField("description")
     private String content;
 
     /**
@@ -61,19 +67,19 @@ public class MemoryItem extends BaseEntity {
      * 难度(例如 easy/medium/hard)
      */
     @TableField("difficulty")
-    private String difficulty;
+    private String difficulty = "medium";
 
     /**
      * 掌握度(数值，越大越掌握)
      */
     @TableField("mastery")
-    private Integer mastery;
+    private Integer mastery = 0;
 
     /**
      * 复习次数
      */
     @TableField("review_count")
-    private Integer reviewCount;
+    private Integer reviewCount = 0;
 
     /**
      * 最近复习时间
@@ -91,5 +97,5 @@ public class MemoryItem extends BaseEntity {
      * 是否加星(0否/1是)
      */
     @TableField("starred")
-    private Integer starred;
+    private Integer starred = 0;
 }

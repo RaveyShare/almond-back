@@ -1,4 +1,4 @@
-package com.ravey.almond.api.dto;
+package com.ravey.almond.api.dto.dto;
 
 import lombok.Data;
 

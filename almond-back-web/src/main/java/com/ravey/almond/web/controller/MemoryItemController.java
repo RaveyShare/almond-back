@@ -1,9 +1,9 @@
 package com.ravey.almond.web.controller;
 
-import com.ravey.almond.api.dto.CreateMemoryItemReq;
-import com.ravey.almond.api.dto.MemoryItemListReq;
-import com.ravey.almond.api.dto.PageResult;
-import com.ravey.almond.api.dto.MemoryItemDTO;
+import com.ravey.almond.api.dto.req.CreateMemoryItemReq;
+import com.ravey.almond.api.dto.req.MemoryItemListReq;
+import com.ravey.almond.api.dto.resp.PageResult;
+import com.ravey.almond.api.dto.dto.MemoryItemDTO;
 import com.ravey.almond.service.MemoryItemService;
 import com.ravey.common.service.web.result.HttpResult;
 import lombok.RequiredArgsConstructor;
@@ -49,5 +49,14 @@ public class MemoryItemController {
     public HttpResult<PageResult<MemoryItemDTO>> list(@ModelAttribute MemoryItemListReq req) {
         PageResult<MemoryItemDTO> result = memoryItemService.listMemoryItems(req);
         return HttpResult.success(result);
+    }
+
+    /**
+     * 更新记忆项
+     */
+    @PostMapping("/update")
+    public HttpResult<Boolean> update(@RequestBody MemoryItemDTO dto) {
+        boolean success = memoryItemService.updateMemoryItem(dto);
+        return HttpResult.success(success);
     }
 }

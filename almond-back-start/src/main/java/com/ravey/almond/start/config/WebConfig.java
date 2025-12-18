@@ -5,6 +5,7 @@ import com.ravey.common.service.web.interceptor.TransmitCacheInfoInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
@@ -19,6 +20,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  */
 @Configuration
 @RequiredArgsConstructor
+@EnableFeignClients(basePackages = "com.ravey.almond")
 public class WebConfig implements WebMvcConfigurer {
 
     private final TokenInterceptor tokenInterceptor;

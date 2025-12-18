@@ -1,13 +1,12 @@
 package com.ravey.almond.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.ravey.almond.api.dto.CreateMemoryItemReq;
-import com.ravey.almond.api.dto.MemoryItemDTO;
-import com.ravey.almond.api.dto.MemoryItemListReq;
-import com.ravey.almond.api.dto.PageResult;
+import com.ravey.almond.api.dto.req.CreateMemoryItemReq;
+import com.ravey.almond.api.dto.dto.MemoryItemDTO;
+import com.ravey.almond.api.dto.req.MemoryItemListReq;
+import com.ravey.almond.api.dto.resp.PageResult;
 import com.ravey.almond.service.dao.entity.MemoryItem;
 import com.ravey.almond.service.dao.mapper.MemoryItemMapper;
 import com.ravey.almond.service.MemoryItemService;
@@ -15,6 +14,8 @@ import com.ravey.common.core.user.UserCache;
 import com.ravey.common.core.user.UserInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,29 +37,17 @@ public class MemoryItemServiceImpl extends ServiceImpl<MemoryItemMapper, MemoryI
     @Transactional(rollbackFor = Exception.class)
     public Long createMemoryItem(CreateMemoryItemReq request) {
         MemoryItem memoryItem = new MemoryItem();
-        BeanUtils.copyProperties(request, memoryItem);
+        BeanUtil.copyProperties(request, memoryItem, CopyOptions.create().setIgnoreNullValue(true));
+        memoryItem.setTaskType("memory");
 
         // 设置当前用户ID
         UserInfo userInfo = UserCache.getUserInfo();
-        if (userInfo != null) {
-            memoryItem.setUserId(Long.valueOf(userInfo.getUserId()));
-        } else {
-            // 如果获取不到用户信息，抛出异常或处理
+        if (userInfo == null) {
             throw new RuntimeException("User not logged in");
         }
+        memoryItem.setUserId(Long.valueOf(userInfo.getUserId()));
 
-        // 设置默认值
-        if (memoryItem.getMastery() == null) {
-            memoryItem.setMastery(0);
-        }
-        if (memoryItem.getReviewCount() == null) {
-            memoryItem.setReviewCount(0);
-        }
-        if (memoryItem.getStarred() == null) {
-            memoryItem.setStarred(0);
-        }
-
-        // 显式设置复习时间，避免数据库默认值时区问题
+        // 如果没有设置时间，设置为当前时间
         LocalDateTime now = LocalDateTime.now();
         if (memoryItem.getReviewDate() == null) {
             memoryItem.setReviewDate(now);
@@ -86,30 +75,12 @@ public class MemoryItemServiceImpl extends ServiceImpl<MemoryItemMapper, MemoryI
     @Override
     public PageResult<MemoryItemDTO> listMemoryItems(MemoryItemListReq req) {
         Page<MemoryItem> page = new Page<>(req.getPage(), req.getSize());
-        LambdaQueryWrapper<MemoryItem> queryWrapper = new LambdaQueryWrapper<>();
-        
+
         // 获取当前用户
         UserInfo userInfo = UserCache.getUserInfo();
-        if (userInfo != null) {
-            queryWrapper.eq(MemoryItem::getUserId, Long.valueOf(userInfo.getUserId()));
-        }
+        Long userId = userInfo != null ? Long.valueOf(userInfo.getUserId()) : null;
 
-        // 关键词搜索
-        if (req.getKeyword() != null && !req.getKeyword().isEmpty()) {
-            queryWrapper.and(w -> w.like(MemoryItem::getTitle, req.getKeyword())
-                    .or()
-                    .like(MemoryItem::getContent, req.getKeyword()));
-        }
-
-        // 分类过滤
-        if (req.getCategory() != null && !req.getCategory().isEmpty()) {
-            queryWrapper.eq(MemoryItem::getCategory, req.getCategory());
-        }
-
-        // 按创建时间倒序
-        queryWrapper.orderByDesc(MemoryItem::getCreateTime);
-
-        IPage<MemoryItem> resultPage = this.page(page, queryWrapper);
+        IPage<MemoryItem> resultPage = baseMapper.selectPageList(page, req, userId);
 
         List<MemoryItemDTO> list = resultPage.getRecords().stream().map(item -> {
             MemoryItemDTO dto = new MemoryItemDTO();
@@ -118,5 +89,28 @@ public class MemoryItemServiceImpl extends ServiceImpl<MemoryItemMapper, MemoryI
         }).collect(Collectors.toList());
 
         return new PageResult<>(resultPage.getTotal(), resultPage.getCurrent(), resultPage.getSize(), list);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean updateMemoryItem(MemoryItemDTO dto) {
+        if (dto.getId() == null) {
+            throw new RuntimeException("ID cannot be null");
+        }
+        MemoryItem memoryItem = this.getById(dto.getId());
+        if (memoryItem == null) {
+            throw new RuntimeException("Memory item not found");
+        }
+
+        // 修改为只更新非空字段
+        BeanUtil.copyProperties(dto, memoryItem, CopyOptions.create().setIgnoreNullValue(true));
+
+        // 确保 user_id 匹配（简单防越权）
+        UserInfo userInfo = UserCache.getUserInfo();
+        if (userInfo != null && !memoryItem.getUserId().equals(Long.valueOf(userInfo.getUserId()))) {
+            throw new RuntimeException("No permission to update this item");
+        }
+
+        return this.updateById(memoryItem);
     }
 }
