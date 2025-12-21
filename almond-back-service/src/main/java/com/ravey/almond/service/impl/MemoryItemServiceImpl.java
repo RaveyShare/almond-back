@@ -105,6 +105,11 @@ public class MemoryItemServiceImpl extends ServiceImpl<MemoryItemMapper, MemoryI
         // 修改为只更新非空字段
         BeanUtil.copyProperties(dto, memoryItem, CopyOptions.create().setIgnoreNullValue(true));
 
+        // 特别处理 tags，因为 BeanUtil 拷贝 List 时可能会有问题，且如果前端传了空数组也应该能更新成功
+        if (dto.getTags() != null) {
+            memoryItem.setTags(dto.getTags());
+        }
+
         // 确保 user_id 匹配（简单防越权）
         UserInfo userInfo = UserCache.getUserInfo();
         if (userInfo != null && !memoryItem.getUserId().equals(Long.valueOf(userInfo.getUserId()))) {
