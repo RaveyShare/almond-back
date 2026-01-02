@@ -23,8 +23,11 @@
         <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.compilerVersion>17</maven.compiler.compilerVersion>
         <common.dependencies.version>1.0.10-SNAPSHOT</common.dependencies.version>
-        <common.version>1.0.4</common.version>
+        <common.version>1.0.6-SNAPSHOT</common.version>
         <weixin.java.miniapp.version>4.6.0</weixin.java.miniapp.version>
+        <swagger.annotations.version>2.2.20</swagger.annotations.version>
+        <jaxb.version>2.3.1</jaxb.version>
+        <logstash.logback.encoder.version>7.4</logstash.logback.encoder.version>
     </properties>
 
     <!-- 配置从 GitHub Packages 拉取依赖（通配符方式） -->
@@ -93,6 +96,30 @@
                 <groupId>com.github.binarywang</groupId>
                 <artifactId>weixin-java-miniapp</artifactId>
                 <version>${weixin.java.miniapp.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations</artifactId>
+                <version>${swagger.annotations.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>javax.xml.bind</groupId>
+                <artifactId>jaxb-api</artifactId>
+                <version>${jaxb.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.glassfish.jaxb</groupId>
+                <artifactId>jaxb-runtime</artifactId>
+                <version>${jaxb.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.logstash.logback</groupId>
+                <artifactId>logstash-logback-encoder</artifactId>
+                <version>${logstash.logback.encoder.version}</version>
             </dependency>
 
 

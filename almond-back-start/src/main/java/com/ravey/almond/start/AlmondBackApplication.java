@@ -1,5 +1,6 @@
 package com.ravey.almond.start;
 
+import com.ravey.common.service.web.annotation.EnableGlobalExceptionHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
@@ -16,6 +17,7 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @ComponentScan(basePackages = {"com.ravey.almond"})
 @MapperScan("com.ravey.almond.service.dao.mapper")
+@EnableGlobalExceptionHandler
 public class AlmondBackApplication {
 
     public static void main(String[] args) {

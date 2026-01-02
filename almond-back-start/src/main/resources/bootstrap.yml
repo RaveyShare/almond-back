@@ -131,3 +131,7 @@ spring:
         password: ${NACOS_PASSWORD}
         namespace: ""
         group: DEFAULT_GROUP
+almond:
+  mock:
+    ai:
+      enabled: true

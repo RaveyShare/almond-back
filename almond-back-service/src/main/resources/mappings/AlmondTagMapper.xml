@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ravey.almond.service.dao.mapper.AlmondTagMapper">
+
+    <select id="selectIdByName" resultType="java.lang.Long">
+        SELECT id
+        FROM almond_tag
+        WHERE name = #{name}
+        LIMIT 1
+    </select>
+
+    <select id="selectTagNamesByAlmondId" resultType="java.lang.String">
+        SELECT t.name
+        FROM almond_tag t
+        INNER JOIN almond_tag_relation r ON t.id = r.tag_id
+        WHERE r.almond_id = #{almondId}
+    </select>
+</mapper>
+

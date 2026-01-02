@@ -81,7 +81,6 @@ public class TokenInterceptor implements HandlerInterceptor {
         // 如果需要完整的UserInfo，可能需要查库，但为了性能，建议只设置ID
         userInfo.setUsername(String.valueOf(userId)); 
         UserCache.setUserInfo(userInfo);
-
         return true;
     }
 
