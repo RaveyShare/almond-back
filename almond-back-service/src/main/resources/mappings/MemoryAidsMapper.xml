@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ravey.almond.service.dao.mapper.MemoryAidsMapper">
+    
+    <select id="selectByAlmondId" resultType="com.ravey.almond.service.dao.entity.MemoryAids">
+        SELECT 
+            id,
+            almond_id,
+            mind_map_data,
+            mnemonics_data,
+            sensory_data,
+            create_time,
+            update_time
+        FROM memory_aids
+        WHERE almond_id = #{almondId}
+        LIMIT 1
+    </select>
+    
+</mapper>

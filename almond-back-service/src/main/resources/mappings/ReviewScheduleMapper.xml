@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ravey.almond.service.dao.mapper.ReviewScheduleMapper">
+    
+    <select id="selectByAlmondId" resultType="com.ravey.almond.service.dao.entity.ReviewSchedule">
+        SELECT 
+            id,
+            almond_id,
+            user_id,
+            review_date,
+            completed,
+            interval_days,
+            repetition,
+            easiness,
+            create_time,
+            update_time
+        FROM review_schedule
+        WHERE almond_id = #{almondId}
+        ORDER BY review_date ASC
+    </select>
+    
+</mapper>

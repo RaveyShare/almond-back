@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ravey.almond.service.dao.mapper.AlmondAiSnapshotMapper">
+    
+    <select id="selectByAlmondId" resultType="com.ravey.almond.service.dao.entity.AlmondAiSnapshot">
+        SELECT 
+            id,
+            almond_id,
+            user_id,
+            analysis_type,
+            ai_model,
+            prompt_content,
+            analysis_result,
+            status,
+            cost_time,
+            create_time,
+            update_time
+        FROM almond_ai_snapshot
+        WHERE almond_id = #{almondId}
+        ORDER BY create_time DESC
+    </select>
+    
+</mapper>
