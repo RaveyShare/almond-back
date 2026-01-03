@@ -12,5 +12,6 @@ public class AiCenterBaseResp {
     private boolean success;
     @JsonProperty("error_message")
     private String errorMessage;
+    private String prompt;
     private String rawJson;
 }

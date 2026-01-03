@@ -15,5 +15,11 @@
         INNER JOIN almond_tag_relation r ON t.id = r.tag_id
         WHERE r.almond_id = #{almondId}
     </select>
-</mapper>
 
+    <select id="selectTagsByAlmondId" resultType="com.ravey.almond.service.dao.entity.AlmondTag">
+        SELECT t.id, t.name, t.tag_type
+        FROM almond_tag t
+        INNER JOIN almond_tag_relation r ON t.id = r.tag_id
+        WHERE r.almond_id = #{almondId}
+    </select>
+</mapper>

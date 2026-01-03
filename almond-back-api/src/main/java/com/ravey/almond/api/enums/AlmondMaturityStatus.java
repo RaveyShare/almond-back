@@ -2,6 +2,8 @@ package com.ravey.almond.api.enums;
 
 import lombok.Getter;
 
+import java.util.Locale;
+
 /**
  * 杏仁认知成熟度状态枚举
  * 描述一条想法从“模糊”到“收敛”的演化过程
@@ -58,12 +60,31 @@ public enum AlmondMaturityStatus {
      * 根据 code 获取枚举
      */
     public static AlmondMaturityStatus fromCode(String code) {
+        if (code == null) {
+            throw new IllegalArgumentException("Invalid almond maturity status code: null");
+        }
         for (AlmondMaturityStatus status : values()) {
-            if (status.code.equals(code)) {
+            if (status.code.equalsIgnoreCase(code) || status.name().equalsIgnoreCase(code)) {
                 return status;
             }
         }
         throw new IllegalArgumentException("Invalid almond maturity status code: " + code);
+    }
+
+    public static String normalizeCode(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return trimmed;
+        }
+        for (AlmondMaturityStatus status : values()) {
+            if (status.code.equalsIgnoreCase(trimmed) || status.name().equalsIgnoreCase(trimmed)) {
+                return status.code;
+            }
+        }
+        return trimmed.toLowerCase(Locale.ROOT);
     }
 
     /**

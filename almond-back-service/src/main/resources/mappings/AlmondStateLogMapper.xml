@@ -1,4 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ravey.almond.service.dao.mapper.AlmondStateLogMapper">
+    
+    <select id="selectByAlmondId" resultType="com.ravey.almond.service.dao.entity.AlmondStateLog">
+        SELECT 
+            id,
+            almond_id,
+            user_id,
+            from_status,
+            to_status,
+            trigger_type,
+            trigger_event,
+            context_data,
+            description,
+            create_time,
+            update_time
+        FROM almond_state_log
+        WHERE almond_id = #{almondId}
+        ORDER BY create_time DESC
+    </select>
+    
 </mapper>

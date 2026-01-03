@@ -1,7 +1,8 @@
 package com.ravey.almond.service.sdk.aicenter;
 
 import com.ravey.almond.service.sdk.aicenter.model.AiCenterBaseResp;
-import com.ravey.almond.service.sdk.aicenter.model.AiCenterUnderstandingCoreResp;
+import com.ravey.almond.service.sdk.aicenter.model.AiCenterClassificationReq;
+import com.ravey.almond.service.sdk.aicenter.model.AiCenterClassificationResp;
 import com.ravey.almond.service.sdk.aicenter.model.AiCenterUnderstandingReq;
 import com.ravey.almond.service.sdk.aicenter.model.AiCenterUnderstandingResp;
 import com.ravey.common.utils.http.HttpRespons;
@@ -33,6 +34,10 @@ public class AiCenterSdk {
 
     public AiCenterUnderstandingResp understanding(AiCenterUnderstandingReq req) {
         return post("/v1/ai/analyze/understanding", req, AiCenterUnderstandingResp.class);
+    }
+
+    public AiCenterClassificationResp classify(AiCenterClassificationReq req) {
+        return post("/v1/ai/analyze/classification", req, AiCenterClassificationResp.class);
     }
 
     private <T extends AiCenterBaseResp> T post(String path, Object req, Class<T> clazz) {

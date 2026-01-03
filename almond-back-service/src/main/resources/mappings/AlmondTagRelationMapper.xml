@@ -7,4 +7,3 @@
         VALUES (#{almondId}, #{tagId})
     </insert>
 </mapper>
-

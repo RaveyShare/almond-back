@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ravey.almond.service.dao.mapper.AlmondItemMapper">
+    
     <update id="updateUnderstanding">
         UPDATE almond_item
         SET title = #{title},
@@ -8,4 +9,115 @@
             almond_status = #{almondStatus}
         WHERE id = #{id}
     </update>
+
+    <!-- 查询杏仁列表 -->
+    <select id="selectAlmondList" resultType="com.ravey.almond.service.dao.entity.AlmondItem">
+        SELECT 
+            ai.id,
+            ai.parent_id,
+            ai.user_id,
+            ai.title,
+            ai.content,
+            ai.clarified_content,
+            ai.almond_status,
+            ai.final_type,
+            ai.maturity_score,
+            ai.evolution_stage,
+            ai.user_feedback,
+            ai.priority,
+            ai.starred,
+            ai.create_time,
+            ai.update_time
+        FROM almond_item ai
+        WHERE ai.user_id = #{userId}
+        <if test="almondStatus != null and almondStatus != ''">
+            AND ai.almond_status = #{almondStatus}
+        </if>
+        <if test="finalType != null and finalType != ''">
+            AND ai.final_type = #{finalType}
+        </if>
+        <if test="starred != null">
+            AND ai.starred = #{starred}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (ai.title LIKE CONCAT('%', #{keyword}, '%') OR ai.content LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        ORDER BY
+        <choose>
+            <when test="sortBy == 'create_time'">
+                ai.create_time
+            </when>
+            <when test="sortBy == 'maturity_score'">
+                ai.maturity_score
+            </when>
+            <otherwise>
+                ai.update_time
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="sortOrder == 'asc'">
+                ASC
+            </when>
+            <otherwise>
+                DESC
+            </otherwise>
+        </choose>
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 查询总数 -->
+    <select id="countAlmondList" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM almond_item ai
+        WHERE ai.user_id = #{userId}
+        <if test="almondStatus != null and almondStatus != ''">
+            AND ai.almond_status = #{almondStatus}
+        </if>
+        <if test="finalType != null and finalType != ''">
+            AND ai.final_type = #{finalType}
+        </if>
+        <if test="starred != null">
+            AND ai.starred = #{starred}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (ai.title LIKE CONCAT('%', #{keyword}, '%') OR ai.content LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+    </select>
+
+    <!-- 按状态统计 -->
+    <select id="countByStatus" resultType="java.util.HashMap">
+        SELECT 
+            almond_status as status,
+            COUNT(*) as count
+        FROM almond_item
+        WHERE user_id = #{userId}
+        GROUP BY almond_status
+    </select>
+
+    <!-- 按类型统计 -->
+    <select id="countByFinalType" resultType="java.util.HashMap">
+        SELECT 
+            final_type as type,
+            COUNT(*) as count
+        FROM almond_item
+        WHERE user_id = #{userId}
+        AND final_type IS NOT NULL
+        GROUP BY final_type
+    </select>
+
+    <!-- 统计星标数量 -->
+    <select id="countStarred" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM almond_item
+        WHERE user_id = #{userId}
+        AND starred = 1
+    </select>
+
+    <!-- 统计用户杏仁总数 -->
+    <select id="countByUserId" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM almond_item
+        WHERE user_id = #{userId}
+    </select>
+
 </mapper>
