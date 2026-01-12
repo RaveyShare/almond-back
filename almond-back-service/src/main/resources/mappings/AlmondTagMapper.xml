@@ -22,4 +22,16 @@
         INNER JOIN almond_tag_relation r ON t.id = r.tag_id
         WHERE r.almond_id = #{almondId}
     </select>
+
+    <select id="selectFrequentTagsByUserId" resultType="java.lang.String">
+        SELECT t.name
+        FROM almond_tag t
+                 INNER JOIN almond_tag_relation r ON t.id = r.tag_id
+                 INNER JOIN almond_item i ON r.almond_id = i.id
+        WHERE i.user_id = #{userId}
+        GROUP BY t.id, t.name
+        ORDER BY COUNT(*) DESC
+            LIMIT #{limit}
+    </select>
+
 </mapper>

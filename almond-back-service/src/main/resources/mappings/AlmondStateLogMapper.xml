@@ -19,5 +19,27 @@
         WHERE almond_id = #{almondId}
         ORDER BY create_time DESC
     </select>
+
+    <!-- 统计用户反馈数据 -->
+    <select id="countFeedbackStats" resultType="map">
+        SELECT
+            CASE
+                WHEN description LIKE '%接受%' OR description LIKE '%accept%' THEN 'accept'
+                WHEN description LIKE '%修改%' OR description LIKE '%modify%' THEN 'modify'
+                WHEN description LIKE '%拒绝%' OR description LIKE '%reject%' THEN 'reject'
+                ELSE 'unknown'
+                END AS feedbackType,
+            COUNT(*) AS count
+        FROM almond_state_log
+        WHERE user_id = #{userId}
+          AND trigger_type = 'user'
+          AND (description LIKE '%接受%'
+           OR description LIKE '%修改%'
+           OR description LIKE '%拒绝%'
+           OR description LIKE '%accept%'
+           OR description LIKE '%modify%'
+           OR description LIKE '%reject%')
+        GROUP BY feedbackType
+    </select>
     
 </mapper>

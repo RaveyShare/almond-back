@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  almond-back:
+    build:
+      context: ./almond-back-start
+      dockerfile: Dockerfile
+    image: almond-back:local
+    container_name: almond-back
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      NACOS_SERVER_ADDR: almond-nacos:8848
+      NACOS_USERNAME: nacos
+      NACOS_PASSWORD: nacos
+      COMMON_MYSQL_URL: almond-mysql
+      COMMON_MYSQL_USERNAME: root
+      COMMON_MYSQL_PASSWORD: root
+      COMMON_REDIS_HOST: almond-redis
+      COMMON_REDIS_PASSWORD: ""
+      ALMOND_AI_CENTER_URL: http://almond-ai-center:8000
+    ports:
+      - "8082:8082"
+      - "10081:10081"
+    volumes:
+      - ./logs:/root/logs
+    networks:
+      - almond_net
+
+networks:
+  almond_net:
+    external: true
+    name: almond_almond_net

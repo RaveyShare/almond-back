@@ -19,4 +19,7 @@ public class CreateAlmondReq implements Serializable {
     @Schema(description = "原始内容")
     @NotBlank(message = "内容不能为空")
     private String content;
+
+    @Schema(description = "是否触发自动分类")
+    private Boolean enableAutoClassify = true;
 }

@@ -99,12 +99,15 @@ public class AlmondServiceImpl implements AlmondService {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             Long almondId = item.getId();
             String content = req.getContent();
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    almondUnderstandingAiService.understandAfterCreate(almondId, userId, content);
-                }
-            });
+            // 只有 enableAutoClassify=true 时才触发 AI 分析
+            if (Boolean.TRUE.equals(req.getEnableAutoClassify())) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        almondUnderstandingAiService.understandAfterCreate(almondId, userId, content);
+                    }
+                });
+            }
         }
 
         // 3. 转换为响应对象

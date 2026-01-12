@@ -26,7 +26,7 @@ import java.util.Map;
 @Component
 public class AiCenterSdk {
 
-    @Value("${almond.ai-center.url:http://localhost:8000}")
+    @Value("${almond.ai-center.url:http://almond-ai-center:8000}")
     private String aiCenterUrl;
 
     @Value("${almond.ai-center.token:}")

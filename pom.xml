@@ -28,6 +28,8 @@
         <swagger.annotations.version>2.2.20</swagger.annotations.version>
         <jaxb.version>2.3.1</jaxb.version>
         <logstash.logback.encoder.version>7.4</logstash.logback.encoder.version>
+        <maven.surefire.plugin.version>3.5.2</maven.surefire.plugin.version>
+        <jacoco.maven.plugin.version>0.8.12</jacoco.maven.plugin.version>
     </properties>
 
     <!-- 配置从 GitHub Packages 拉取依赖（通配符方式） -->
@@ -240,6 +242,18 @@
                             </goals>
                         </execution>
                     </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven.surefire.plugin.version}</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco.maven.plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

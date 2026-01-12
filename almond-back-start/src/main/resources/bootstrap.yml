@@ -1,5 +1,5 @@
 server:
-  port: 8082
+  port: 8083
 
 spring:
   application:
@@ -62,7 +62,7 @@ management:
     tags:
       application: ${spring.application.name}
   server:
-    port: 10081
+    port: 10083
   tracing:
     sampling:
       probability: 1.0

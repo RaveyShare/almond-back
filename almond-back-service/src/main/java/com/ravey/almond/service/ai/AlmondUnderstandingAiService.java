@@ -1,27 +1,28 @@
 package com.ravey.almond.service.ai;
 
 import com.ravey.almond.api.enums.AlmondMaturityStatus;
-import com.ravey.almond.api.enums.EvolutionTriggerType;
+import com.ravey.almond.api.enums.EvolutionStageType;
 import com.ravey.almond.service.dao.entity.AlmondAiSnapshot;
 import com.ravey.almond.service.dao.entity.AlmondItem;
+import com.ravey.almond.service.dao.entity.AlmondStateLog;
 import com.ravey.almond.service.dao.entity.AlmondTag;
 import com.ravey.almond.service.dao.mapper.AlmondAiSnapshotMapper;
 import com.ravey.almond.service.dao.mapper.AlmondItemMapper;
+import com.ravey.almond.service.dao.mapper.AlmondStateLogMapper;
 import com.ravey.almond.service.dao.mapper.AlmondTagMapper;
 import com.ravey.almond.service.dao.mapper.AlmondTagRelationMapper;
-import com.ravey.almond.service.machine.AlmondStateMachineService;
 import com.ravey.almond.service.sdk.aicenter.AiCenterSdk;
 import com.ravey.almond.service.sdk.aicenter.model.AiCenterUnderstandingReq;
 import com.ravey.almond.service.sdk.aicenter.model.AiCenterUnderstandingResp;
 import com.ravey.common.utils.json.JsonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,7 @@ import java.util.Map;
 /**
  * 杏仁理解AI服务
  *
- * @author Ravey
+ * @author ravey
  * @since 1.0.0
  */
 @Slf4j
@@ -37,199 +38,233 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AlmondUnderstandingAiService {
 
-    private final AlmondItemMapper almondItemMapper;
+    private final AiCenterSdk aiCenterSdk;
     private final AlmondAiSnapshotMapper almondAiSnapshotMapper;
+    private final AlmondItemMapper almondItemMapper;
+    private final AlmondStateLogMapper almondStateLogMapper;
     private final AlmondTagMapper almondTagMapper;
     private final AlmondTagRelationMapper almondTagRelationMapper;
-    private final AlmondStateMachineService stateMachineService;
-    private final AlmondClassificationService classificationService;
-    private final AiCenterSdk aiCenterSdk;
 
-    /**
-     * 创建后自动理解
-     * 异步执行，不阻塞用户操作
-     */
+    @Value("${almond.ai.understanding.threshold:0.9}")
+    private double understandingThreshold;
+
     @Async("aiExecutor")
     @Transactional(rollbackFor = Exception.class)
     public void understandAfterCreate(Long almondId, Long userId, String content) {
-        log.info("开始AI理解，almondId: {}, userId: {}", almondId, userId);
-        
+        AlmondItem item = almondItemMapper.selectById(almondId);
+        if (item == null) {
+            log.warn("杏仁不存在，almondId: {}", almondId);
+            return;
+        }
+
+        // 检查状态：必须是RAW
+        if (!AlmondMaturityStatus.RAW.getCode().equals(item.getAlmondStatus())) {
+            log.warn("杏仁不在RAW状态，跳过理解，almondId: {}, currentStatus: {}",
+                    almondId, item.getAlmondStatus());
+            return;
+        }
+
+        // 检查阶段：只有CREATED阶段才执行理解
+        if (item.getEvolutionStage() != null && item.getEvolutionStage() != EvolutionStageType.CREATED.getCode()) {
+            log.warn("杏仁不在CREATED阶段，跳过理解，almondId: {}, currentStage: {}",
+                    almondId, item.getEvolutionStage());
+            return;
+        }
+
         try {
-            // 1. 调用AI理解接口
-            AiCenterUnderstandingResp aiResp = callAiUnderstanding(almondId, userId, content);
-            
-            // 2. 记录AI快照
-            saveAiSnapshot(almondId, userId, "understanding", aiResp);
-            
-            // 3. 根据置信度决策
-            double confidence = aiResp.getConfidence();
-            
-            if (confidence >= 0.7) {
-                // 置信度高：自动流转到UNDERSTOOD
-                handleHighConfidence(almondId, userId, aiResp);
-                
-            } else if (confidence >= 0.5) {
-                // 置信度中等：保持RAW，给出建议
-                handleMediumConfidence(almondId, userId, aiResp);
-                
-            } else {
-                // 置信度低：保持RAW，强烈建议补充
-                handleLowConfidence(almondId, userId, aiResp);
+            // 1. 更新为理解中
+            updateStage(almondId, EvolutionStageType.UNDERSTANDING);
+
+            // 2. 调用AI理解
+            AiCenterUnderstandingReq req = new AiCenterUnderstandingReq();
+            req.setText(content);
+            req.setTaskId(almondId);
+            req.setUserId(userId);
+
+            AiCenterUnderstandingResp aiResp = aiCenterSdk.understanding(req);
+
+            // 3. 记录AI快照
+            saveAiSnapshot(almondId, userId, content, aiResp);
+
+            if (!aiResp.isSuccess()) {
+                log.warn("AI理解失败，almondId: {}, err: {}", almondId, aiResp.getErrorMessage());
+                // 回退到CREATED阶段
+                updateStage(almondId, EvolutionStageType.CREATED);
+                return;
             }
-            
-            log.info("AI理解完成，almondId: {}, confidence: {}", almondId, confidence);
-            
+
+            // 4. 根据置信度决策
+            double confidence = aiResp.getConfidence();
+            String title = StringUtils.hasText(aiResp.getTitle()) ? aiResp.getTitle().trim() : null;
+            String clarifiedText = StringUtils.hasText(aiResp.getClarifiedText()) ? aiResp.getClarifiedText().trim() : null;
+
+            if (confidence >= 0.7) {
+                // 置信度高：流转到UNDERSTOOD
+                handleHighConfidence(almondId, userId, title, clarifiedText, aiResp);
+
+            } else if (confidence >= 0.5) {
+                // 置信度中等：更新内容但保持RAW
+                handleMediumConfidence(almondId, title, clarifiedText, aiResp);
+
+            } else {
+                // 置信度低：回退到CREATED
+                log.info("置信度过低，回退到CREATED，almondId: {}, confidence: {}", almondId, confidence);
+                updateStage(almondId, EvolutionStageType.CREATED);
+            }
+
         } catch (Exception e) {
             log.error("AI理解失败，almondId: " + almondId, e);
-            // 降级处理：保持RAW状态，不影响用户使用
-            handleAiFailure(almondId, userId, e);
+            // 回退到CREATED阶段
+            updateStage(almondId, EvolutionStageType.CREATED);
         }
     }
 
     /**
-     * 调用AI理解接口
+     * 处理高置信度（>=0.7）
      */
-    private AiCenterUnderstandingResp callAiUnderstanding(Long almondId, Long userId, String content) {
-        AiCenterUnderstandingReq req = new AiCenterUnderstandingReq();
-        req.setTaskId(almondId);
-        req.setUserId(userId);
-        req.setContent(content);
-        req.setMaxTokens(1000);
-        req.setTemperature(0.7);
-        
-        return aiCenterSdk.understanding(req);
+    private void handleHighConfidence(Long almondId, Long userId, String title,
+                                      String clarifiedText, AiCenterUnderstandingResp aiResp) {
+        if (StringUtils.hasText(title) && StringUtils.hasText(clarifiedText)) {
+            // 更新内容和状态
+            almondItemMapper.updateUnderstanding(
+                    almondId,
+                    title,
+                    clarifiedText,
+                    AlmondMaturityStatus.UNDERSTOOD.getCode()
+            );
+
+            // 更新为UNDERSTOOD阶段
+            updateStage(almondId, EvolutionStageType.UNDERSTOOD);
+
+            // 保存标签
+            saveTags(almondId, aiResp.getTags());
+
+            // 记录状态日志
+            AlmondStateLog stateLog = new AlmondStateLog();
+            stateLog.setAlmondId(almondId);
+            stateLog.setUserId(userId);
+            stateLog.setFromStatus(AlmondMaturityStatus.RAW.getCode());
+            stateLog.setToStatus(AlmondMaturityStatus.UNDERSTOOD.getCode());
+            stateLog.setTriggerType("AI");
+
+            Map<String, Object> contextData = new HashMap<>();
+            contextData.put("title", title);
+            contextData.put("clarified_text", clarifiedText);
+            contextData.put("tags", aiResp.getTags());
+            contextData.put("confidence", aiResp.getConfidence());
+            contextData.put("evolution_stage", EvolutionStageType.UNDERSTOOD.getCode());
+            stateLog.setContextData(JsonUtil.bean2Json(contextData));
+
+            almondStateLogMapper.insert(stateLog);
+
+            log.info("AI理解完成，流转到UNDERSTOOD，almondId: {}, stage: {}",
+                    almondId, EvolutionStageType.UNDERSTOOD.getCode());
+        }
     }
 
     /**
-     * 处理高置信度情况（>=0.7）
+     * 处理中等置信度（0.5-0.7）
      */
-    private void handleHighConfidence(Long almondId, Long userId, AiCenterUnderstandingResp aiResp) {
-        AlmondItem item = almondItemMapper.selectById(almondId);
-        
-        // 1. 更新标题和澄清内容
-        if (aiResp.getTitle() != null) {
-            item.setTitle(aiResp.getTitle());
+    private void handleMediumConfidence(Long almondId, String title,
+                                        String clarifiedText, AiCenterUnderstandingResp aiResp) {
+        if (StringUtils.hasText(title) && StringUtils.hasText(clarifiedText)) {
+            // 更新内容但保持RAW状态
+            almondItemMapper.updateUnderstanding(
+                    almondId,
+                    title,
+                    clarifiedText,
+                    AlmondMaturityStatus.RAW.getCode()
+            );
+
+            // 回退到CREATED阶段（等待用户review后再触发）
+            updateStage(almondId, EvolutionStageType.CREATED);
+
+            saveTags(almondId, aiResp.getTags());
+
+            log.info("置信度中等，保持RAW状态，almondId: {}, confidence: {}, stage: {}",
+                    almondId, aiResp.getConfidence(), EvolutionStageType.CREATED.getCode());
         }
-        if (aiResp.getClarifiedText() != null) {
-            item.setClarifiedContent(aiResp.getClarifiedText());
-        }
+    }
+
+    /**
+     * 仅更新演化阶段
+     */
+    private void updateStage(Long almondId, EvolutionStageType stage) {
+        AlmondItem item = new AlmondItem();
+        item.setId(almondId);
+        item.setEvolutionStage(stage.getCode());
         almondItemMapper.updateById(item);
-        
-        // 2. 处理标签
-        if (!CollectionUtils.isEmpty(aiResp.getTags())) {
-            saveTags(almondId, userId, aiResp.getTags());
-        }
-        
-        // 3. 流转状态到UNDERSTOOD
-        Map<String, Object> context = new HashMap<>();
-        context.put("confidence", aiResp.getConfidence());
-        context.put("ai_model", aiResp.getModel());
-        
-        stateMachineService.transition(
-            almondId,
-            AlmondMaturityStatus.UNDERSTOOD,
-            EvolutionTriggerType.AI,
-            "AI理解完成，置信度: " + String.format("%.2f", aiResp.getConfidence()),
-            context
-        );
-        
-        // 4. 延迟触发分类分析（30秒后）
-        classificationService.scheduleClassification(almondId, userId, 30);
-    }
 
-    /**
-     * 处理中等置信度情况（0.5-0.7）
-     */
-    private void handleMediumConfidence(Long almondId, Long userId, AiCenterUnderstandingResp aiResp) {
-        AlmondItem item = almondItemMapper.selectById(almondId);
-        
-        // 1. 更新澄清内容（如果有）
-        if (aiResp.getClarifiedText() != null) {
-            item.setClarifiedContent(aiResp.getClarifiedText());
-            almondItemMapper.updateById(item);
-        }
-        
-        // 2. 添加建议
-        String suggestion = "AI理解程度：中等（" + 
-            String.format("%.0f", aiResp.getConfidence() * 100) + "%）\n" +
-            "建议补充更多信息以提高分类准确度";
-        
-        // TODO: 发送建议通知给用户
-        log.info("添加建议，almondId: {}, suggestion: {}", almondId, suggestion);
-    }
-
-    /**
-     * 处理低置信度情况（<0.5）
-     */
-    private void handleLowConfidence(Long almondId, Long userId, AiCenterUnderstandingResp aiResp) {
-        String suggestion = "AI理解程度：较低（" + 
-            String.format("%.0f", aiResp.getConfidence() * 100) + "%）\n" +
-            "请补充详细描述，帮助系统更好地理解你的想法";
-        
-        // TODO: 发送建议通知给用户
-        log.info("添加强烈建议，almondId: {}, suggestion: {}", almondId, suggestion);
-    }
-
-    /**
-     * 处理AI调用失败
-     */
-    private void handleAiFailure(Long almondId, Long userId, Exception e) {
-        // 记录失败的AI快照
-        AlmondAiSnapshot snapshot = new AlmondAiSnapshot();
-        snapshot.setAlmondId(almondId);
-        snapshot.setUserId(userId);
-        snapshot.setAnalysisType("understanding");
-        snapshot.setStatus("failed");
-        snapshot.setAnalysisResult(JsonUtil.bean2Json(Map.of(
-            "error", e.getMessage(),
-            "error_type", e.getClass().getSimpleName()
-        )));
-        snapshot.setCreateTime(LocalDateTime.now());
-        
-        almondAiSnapshotMapper.insert(snapshot);
-        
-        // 保持RAW状态，用户可以手动操作
-        log.warn("AI理解失败，杏仁保持RAW状态，almondId: {}", almondId);
+        log.debug("更新演化阶段，almondId: {}, stage: {} ({})",
+                almondId, stage.getCode(), stage.getName());
     }
 
     /**
      * 保存AI快照
      */
-    private void saveAiSnapshot(Long almondId, Long userId, String analysisType, 
-                                AiCenterUnderstandingResp aiResp) {
+    private void saveAiSnapshot(Long almondId, Long userId, String content, AiCenterUnderstandingResp aiResp) {
         AlmondAiSnapshot snapshot = new AlmondAiSnapshot();
         snapshot.setAlmondId(almondId);
         snapshot.setUserId(userId);
-        snapshot.setAnalysisType(analysisType);
+        snapshot.setAnalysisType("understanding");
         snapshot.setAiModel(aiResp.getModel());
-        snapshot.setPromptContent(aiResp.getPrompt());
-        snapshot.setAnalysisResult(JsonUtil.bean2Json(aiResp));
-        snapshot.setStatus("success");
+
+        Map<String, Object> promptContent = new HashMap<>();
+        promptContent.put("user_input", content);
+        snapshot.setPromptContent(JsonUtil.bean2Json(promptContent));
+
+        snapshot.setAnalysisResult(
+                StringUtils.hasText(aiResp.getRawJson()) ?
+                        aiResp.getRawJson() :
+                        JsonUtil.bean2Json(buildSnapshotFallback(aiResp))
+        );
+        snapshot.setStatus(aiResp.isSuccess() ? "success" : "failed");
         snapshot.setCostTime(aiResp.getCostTime());
-        snapshot.setCreateTime(LocalDateTime.now());
-        
         almondAiSnapshotMapper.insert(snapshot);
     }
 
     /**
      * 保存标签
      */
-    private void saveTags(Long almondId, Long userId, List<String> tagNames) {
-        for (String tagName : tagNames) {
-            // 1. 查找或创建标签
+    private void saveTags(Long almondId, List<String> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return;
+        }
+        for (String name : tags) {
+            if (!StringUtils.hasText(name)) {
+                continue;
+            }
+            String tagName = name.trim();
+            if (!StringUtils.hasText(tagName)) {
+                continue;
+            }
             Long tagId = almondTagMapper.selectIdByName(tagName);
-            
             if (tagId == null) {
-                // 标签不存在，创建新标签
                 AlmondTag tag = new AlmondTag();
                 tag.setName(tagName);
-                tag.setTagType("ai_generated");  // AI生成的标签
+                tag.setTagType("cognitive");
                 almondTagMapper.insert(tag);
                 tagId = tag.getId();
+                if (tagId == null) {
+                    tagId = almondTagMapper.selectIdByName(tagName);
+                }
             }
-            
-            // 2. 创建关联（忽略重复）
-            almondTagRelationMapper.insertIgnore(almondId, tagId);
+            if (tagId != null) {
+                almondTagRelationMapper.insertIgnore(almondId, tagId);
+            }
         }
+    }
+
+    private Map<String, Object> buildSnapshotFallback(AiCenterUnderstandingResp aiResp) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("title", aiResp.getTitle());
+        map.put("clarified_text", aiResp.getClarifiedText());
+        map.put("tags", aiResp.getTags());
+        map.put("core", aiResp.getCore());
+        map.put("confidence", aiResp.getConfidence());
+        map.put("reasoning", aiResp.getReasoning());
+        map.put("success", aiResp.isSuccess());
+        map.put("error_message", aiResp.getErrorMessage());
+        return map;
     }
 }
