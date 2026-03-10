@@ -7,26 +7,25 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 杏仁标签表
- *
- * @author ravey
+ * 标签表
+ * 
+ * @author Ravey
  * @since 1.0.0
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("almond_tag")
 public class AlmondTag extends BaseEntity {
-
+    
     /**
      * 标签名称
      */
     @TableField("name")
     private String name;
-
+    
     /**
-     * 标签类型
+     * 标签类型: ai/user
      */
     @TableField("tag_type")
     private String tagType;
 }
-

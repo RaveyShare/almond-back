@@ -10,29 +10,19 @@ import java.util.Map;
 
 /**
  * 杏仁Mapper
- *
- * @author ravey
+ * 
+ * @author Ravey
  * @since 1.0.0
  */
 @Mapper
 public interface AlmondItemMapper extends BaseMapper<AlmondItem> {
-
-    /**
-     * 更新理解信息
-     */
-    int updateUnderstanding(
-            @Param("id") Long id,
-            @Param("title") String title,
-            @Param("clarifiedContent") String clarifiedContent,
-            @Param("almondStatus") String almondStatus
-    );
-
+    
     /**
      * 查询杏仁列表
      */
-    List<AlmondItem> selectAlmondList(
+    List<AlmondItem> selectList(
             @Param("userId") Long userId,
-            @Param("almondStatus") String almondStatus,
+            @Param("status") String status,
             @Param("finalType") String finalType,
             @Param("starred") Integer starred,
             @Param("keyword") String keyword,
@@ -41,35 +31,50 @@ public interface AlmondItemMapper extends BaseMapper<AlmondItem> {
             @Param("offset") Integer offset,
             @Param("pageSize") Integer pageSize
     );
-
+    
     /**
-     * 查询杏仁总数
+     * 统计总数
      */
-    Long countAlmondList(
+    Long countList(
             @Param("userId") Long userId,
-            @Param("almondStatus") String almondStatus,
+            @Param("status") String status,
             @Param("finalType") String finalType,
             @Param("starred") Integer starred,
             @Param("keyword") String keyword
     );
-
+    
     /**
      * 按状态统计
      */
     List<Map<String, Object>> countByStatus(@Param("userId") Long userId);
-
+    
     /**
      * 按类型统计
      */
     List<Map<String, Object>> countByFinalType(@Param("userId") Long userId);
-
+    
     /**
      * 统计星标数量
      */
     Long countStarred(@Param("userId") Long userId);
-
+    
     /**
-     * 统计用户的杏仁总数
+     * 更新AI处理结果
      */
-    Long countByUserId(@Param("userId") Long userId);
+    int updateAiResult(
+            @Param("id") Long id,
+            @Param("title") String title,
+            @Param("clarifiedContent") String clarifiedContent,
+            @Param("finalType") String finalType,
+            @Param("confidence") Integer confidence,
+            @Param("status") String status
+    );
+    
+    /**
+     * 更新为失败状态
+     */
+    int updateFailed(
+            @Param("id") Long id,
+            @Param("errorMessage") String errorMessage
+    );
 }

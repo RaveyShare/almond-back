@@ -8,84 +8,66 @@ import lombok.EqualsAndHashCode;
 
 /**
  * 杏仁核心表
- *
- * @author ravey
+ * 
+ * @author Ravey
  * @since 1.0.0
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("almond_item")
 public class AlmondItem extends BaseEntity {
-
-    /**
-     * 父杏仁ID（拆解/派生）
-     */
-    @TableField("parent_id")
-    private Long parentId;
-
+    
     /**
      * 用户ID
      */
     @TableField("user_id")
     private Long userId;
-
+    
     /**
-     * AI生成原始输入摘要
-     */
-    @TableField("title")
-    private String title;
-
-    /**
-     * 原始内容
+     * 用户原始输入
      */
     @TableField("content")
     private String content;
-
+    
     /**
-     * AI澄清后的内容，用户可修改
+     * AI生成的标题
+     */
+    @TableField("title")
+    private String title;
+    
+    /**
+     * AI澄清后的内容
      */
     @TableField("clarified_content")
     private String clarifiedContent;
-
+    
     /**
-     * 成熟度状态: raw/understood/evolving/converged/archived
+     * 状态: processing/done/failed
      */
-    @TableField("almond_status")
-    private String almondStatus;
-
+    @TableField("status")
+    private String status;
+    
     /**
-     * 终态类型: memory/action/goal/decision/review
+     * 最终类型: memory/action/goal/idea
      */
     @TableField("final_type")
     private String finalType;
-
+    
     /**
-     * 成熟度评分(0-100)
+     * AI置信度(0-100)
      */
-    @TableField("maturity_score")
-    private Integer maturityScore;
-
+    @TableField("confidence")
+    private Integer confidence;
+    
     /**
-     * 演化阶段
-     */
-    @TableField("evolution_stage")
-    private Integer evolutionStage;
-
-    /**
-     * accept/modify/reject
-     */
-    @TableField("user_feedback")
-    private String userFeedback;
-
-    /**
-     * 优先级
-     */
-    @TableField("priority")
-    private Integer priority;
-
-    /**
-     * 是否标星
+     * 是否星标: 0-否, 1-是
      */
     @TableField("starred")
     private Integer starred;
+    
+    /**
+     * 错误信息
+     */
+    @TableField("error_message")
+    private String errorMessage;
 }
